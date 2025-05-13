@@ -1,3 +1,4 @@
+// components/PlayerTransferDisplay.tsx
 import { Time } from '@/types/time';
 import { Transferencia } from './PlayerTransferForm';
 

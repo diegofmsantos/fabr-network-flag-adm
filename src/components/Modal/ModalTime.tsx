@@ -1,3 +1,4 @@
+// src/components/Modal/ModalTime.tsx
 "use client"
 
 import { useState } from "react";
@@ -16,14 +17,11 @@ export default function ModalTime({
     openJogadorModal: (jogador: any) => void;
     updateTime: (updatedTime: Time) => void;
 }) {
-    // Inicializa o formulário garantindo a estrutura correta para titulos
-    const initialFormData = {
+    // Inicializa o formulário com os dados do time
+    const [formData, setFormData] = useState<Time>({
         ...time,
-        titulos: time.titulos?.[0] || { nacionais: "", conferencias: "", estaduais: "" },
         jogadores: time.jogadores || [],
-    };
-
-    const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
+    });
     const [filter, setFilter] = useState("");
     const [filteredJogadores, setFilteredJogadores] = useState(time.jogadores || []);
     const [activeTab, setActiveTab] = useState<'info' | 'jogadores'>('info');
@@ -32,22 +30,10 @@ export default function ModalTime({
     // Atualiza os campos do formulário
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
-        if (name.startsWith("titulos.")) {
-            const field = name.split(".")[1];
-            setFormData((prev) => ({
-                ...prev,
-                titulos: {
-                    ...prev.titulos,
-                    [field]: value,
-                },
-            }));
-        } else {
-            setFormData((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
-        }
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
     };
 
     // Salva as alterações no backend
@@ -56,7 +42,6 @@ export default function ModalTime({
         try {
             const payload = {
                 ...formData,
-                titulos: [formData.titulos],
             };
             await api.put(`/time/${time.id}`, payload);
             updateTime(payload);
@@ -89,12 +74,11 @@ export default function ModalTime({
         const value = e.target.value.toLowerCase();
         setFilter(value);
         setFilteredJogadores(
-            formData.jogadores.filter((jogador) =>
-                jogador.nome.toLowerCase().includes(value)
-            )
+            formData.jogadores?.filter((jogador) =>
+                jogador.nome?.toLowerCase().includes(value)
+            ) || []
         );
     };
-
 
     return (
         <div className="fixed inset-0 z-50 overflow-hidden">
@@ -155,7 +139,7 @@ export default function ModalTime({
                                     : 'text-gray-400 hover:text-white'
                             }`}
                         >
-                            Jogadores ({formData.jogadores.length})
+                            Jogadores ({formData.jogadores?.length || 0})
                             {activeTab === 'jogadores' && (
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#63E300]"></span>
                             )}
@@ -182,8 +166,7 @@ export default function ModalTime({
                                                 <input
                                                     type="text"
                                                     name={field.name}
-                                                    // @ts-ignore
-                                                    value={field.name.startsWith("titulos.") ? formData.titulos?.[field.name.split(".")[1]] || "" : formData[field.name] || ""}
+                                                    value={formData[field.name as keyof Time] as string || ""}
                                                     onChange={handleChange}
                                                     placeholder={field.label}
                                                     className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
@@ -232,15 +215,6 @@ export default function ModalTime({
                                             </div>
                                             <div className="p-3 flex-grow">
                                                 <h4 className="text-white font-medium">{jogador.nome}</h4>
-                                                <div className="flex items-center mt-1">
-                                                    <span className="text-xs text-gray-400 bg-[#272731] px-2 py-0.5 rounded">
-                                                        {jogador.posicao}
-                                                    </span>
-                                                    <span className="mx-2 text-gray-600">•</span>
-                                                    <span className="text-xs text-gray-400">
-                                                        {jogador.setor}
-                                                    </span>
-                                                </div>
                                             </div>
                                             <div className="p-3 text-gray-400">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

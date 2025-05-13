@@ -1,19 +1,19 @@
+// src/components/Times.tsx (modificado para incluir a aba de jogadores)
 "use client"
 
-import { useForm, SubmitHandler, FieldError } from "react-hook-form"
+import { useForm, SubmitHandler } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { Time } from "../types/time"
 import { TimeSchema } from "@/schemas/Time"
 import { JogadorSchema } from "@/schemas/Jogador"
-import { api, getTimes } from "@/api/api"
+import { api, getTimes, addJogador } from "@/api/api"
 import { FormField } from "@/components/Formulario/FormField"
-import get from "lodash/get"
 import ModalTime from "@/components/Modal/ModalTime";
 import ModalJogador from "@/components/Modal/ModalJogador";
 import ModalSucesso from "./Modal/ModalSucesso"
-import { camposJogador, camposNumericosJogador, camposTime, estatisticas } from "../utils/campos"
+import { camposTime, camposJogador, estatisticas } from "../utils/campos"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -22,48 +22,43 @@ type JogadorFormData = z.infer<typeof JogadorSchema>
 
 export const Times = () => {
     const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        reset
+        register: registerTime,
+        handleSubmit: handleSubmitTime,
+        formState: { errors: timesErrors },
+        reset: resetTime
     } = useForm<TimeFormData>({
         resolver: zodResolver(TimeSchema),
         defaultValues: {
-            temporada: "2024"
+            temporada: "2025"
         }
     })
 
     const {
         register: registerJogador,
         handleSubmit: handleSubmitJogador,
-        formState: { errors: jogadorErrors },
+        formState: { errors: jogadoresErrors },
         reset: resetJogador
     } = useForm<JogadorFormData>({
         resolver: zodResolver(JogadorSchema),
         defaultValues: {
             estatisticas: {
-                passe: {},
-                corrida: {},
-                recepcao: {},
-                retorno: {},
-                defesa: {},
-                kicker: {},
-                punter: {},
-            },
-        },
+                ataque: {},
+                defesa: {}
+            }
+        }
     })
 
     const [times, setTimes] = useState<Time[]>([])
     const [loading, setLoading] = useState(true)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isSubmittingTime, setIsSubmittingTime] = useState(false)
+    const [isSubmittingJogador, setIsSubmittingJogador] = useState(false)
     const [selectedTime, setSelectedTime] = useState<Time | null>(null)
     const [selectedJogador, setSelectedJogador] = useState<any | null>(null)
     const [isTimeModalOpen, setIsTimeModalOpen] = useState(false)
     const [isJogadorModalOpen, setIsJogadorModalOpen] = useState(false)
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
     const [successMessage, setSuccessMessage] = useState("")
-    const [temporadaSelecionada, setTemporadaSelecionada] = useState("2024")
-    const [jogadorTemporada, setJogadorTemporada] = useState("2024")
+    const [temporadaSelecionada, setTemporadaSelecionada] = useState("2025")
     const [activeTab, setActiveTab] = useState<'time' | 'jogador' | 'times-cadastrados'>('time')
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
 
@@ -82,53 +77,69 @@ export const Times = () => {
         fetchTimes()
     }, [temporadaSelecionada])
 
-    const removeEmptyFields = (obj: any) => {
-        return Object.fromEntries(
-            Object.entries(obj).filter(([_, value]) => value !== undefined && value !== "")
-        )
-    }
-
     const onSubmitTime: SubmitHandler<TimeFormData> = async (data) => {
+        setIsSubmittingTime(true)
         try {
-            await api.post("/time", data)
+            await api.post("/time", {
+                ...data,
+                temporada: temporadaSelecionada
+            })
             setSuccessMessage("Time adicionado com sucesso!")
             setIsSuccessModalOpen(true)
-            reset()
-            setIsSuccessModalOpen(false)
+            resetTime()
+
+            // Recarregar a lista de times
+            const updatedTimes = await getTimes(temporadaSelecionada)
+            setTimes(updatedTimes)
         } catch (error) {
             console.error("Erro ao adicionar time:", error)
+            setSuccessMessage("Erro ao adicionar time. Verifique o console para mais detalhes.")
+            setIsSuccessModalOpen(true)
+        } finally {
+            setIsSubmittingTime(false)
         }
     }
 
     const onSubmitJogador: SubmitHandler<JogadorFormData> = async (data) => {
-        setIsSubmitting(true)
-
+        setIsSubmittingJogador(true)
         try {
-            // Filtrar estatísticas não preenchidas
-            const estatisticasFiltradas = Object.fromEntries(
-                Object.entries(data.estatisticas || {}).map(([group, stats]) => [
-                    group,
-                    removeEmptyFields(stats || {}),
-                ])
+            // Garantir que estatísticas não preenchidas sejam removidas
+            // Correção para a filtragem de estatísticas
+            const estatisticasAtaque = Object.fromEntries(
+                Object.entries(data.estatisticas?.ataque || {})
+                    .filter(([_, value]) => value !== undefined && value !== null && value !== 0)
             );
 
-            // Adicionar temporada manualmente ao objeto de dados
+            const estatisticasDefesa = Object.fromEntries(
+                Object.entries(data.estatisticas?.defesa || {})
+                    .filter(([_, value]) => value !== undefined && value !== null && value !== 0)
+            );
+
             const jogadorData = {
                 ...data,
-                temporada: jogadorTemporada,
-                estatisticas: estatisticasFiltradas,
+                temporada: temporadaSelecionada,
+                estatisticas: {
+                    ataque: estatisticasAtaque,
+                    defesa: estatisticasDefesa
+                }
             };
 
-            await api.post("/jogador", jogadorData);
-            setSuccessMessage("Jogador adicionado com sucesso!")
-            setIsSuccessModalOpen(true)
-            resetJogador()
+            await addJogador(jogadorData);
+            setSuccessMessage("Jogador adicionado com sucesso!");
+            setIsSuccessModalOpen(true);
+            resetJogador();
+
+            // Recarregar a lista de times para atualizar jogadores
+            const updatedTimes = await getTimes(temporadaSelecionada);
+            setTimes(updatedTimes);
         } catch (error) {
-            console.error("Erro ao adicionar jogador:", error)
+            console.error("Erro ao adicionar jogador:", error);
+            setSuccessMessage("Erro ao adicionar jogador. Verifique o console para mais detalhes.");
+            setIsSuccessModalOpen(true);
         } finally {
-            setIsSubmitting(false)
+            setIsSubmittingJogador(false);
         }
-    }
+    };
 
     // Função para atualizar um time no estado
     const updateTime = (updatedTime: Time) => {
@@ -144,6 +155,7 @@ export const Times = () => {
         setTemporadaSelecionada(e.target.value);
     }
 
+    // Função para alternar o estado de expansão de um grupo
     const toggleGroup = (groupId: string) => {
         setExpandedGroups(prev => ({
             ...prev,
@@ -175,8 +187,8 @@ export const Times = () => {
                                 onChange={handleTemporadaChange}
                                 className="bg-[#2C2C34] text-white px-2 py-1 rounded border border-gray-700 text-sm"
                             >
-                                <option value="2024">2024</option>
                                 <option value="2025">2025</option>
+                                <option value="2026">2026</option>
                             </select>
                         </div>
                         <div className="flex ml-auto gap-4 mr-4">
@@ -193,8 +205,6 @@ export const Times = () => {
                     </div>
                 </div>
             </header>
-
-           
 
             {/* Tabs de navegação */}
             <div className="bg-[#272731] border-b border-gray-700 sticky top-20 z-10">
@@ -254,7 +264,7 @@ export const Times = () => {
                         </div>
 
                         <form
-                            onSubmit={handleSubmit(onSubmitTime)}
+                            onSubmit={handleSubmitTime(onSubmitTime)}
                             className="bg-[#272731] rounded-xl shadow-lg overflow-hidden"
                         >
                             <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -263,55 +273,34 @@ export const Times = () => {
                                         key={field.id}
                                         label={field.label}
                                         id={field.id}
-                                        register={register(field.id)}
-                                        error={errors[field.id as keyof TimeFormData] as FieldError | undefined}
+                                        register={registerTime(field.id)}
+                                        error={timesErrors[field.id] as unknown as any}
                                     />
                                 ))}
 
-                                {/* Campo de temporada para o time */}
-                                <FormField
-                                    label="Temporada"
-                                    id="temporada"
-                                    register={register("temporada")}
-                                    error={errors.temporada as FieldError | undefined}
-                                    type="select"
-                                    options={[
-                                        { value: "2024", label: "2024" },
-                                        { value: "2025", label: "2025" },
-                                    ]}
-                                />
-
-                                {/* Campos de Títulos */}
-                                {(["nacionais", "conferencias", "estaduais"] as const).map((titulo) => (
-                                    <FormField
-                                        key={`titulos.0.${titulo}`}
-                                        label={`Títulos ${titulo.charAt(0).toUpperCase() + titulo.slice(1)}`}
-                                        id={`titulos.0.${titulo}`}
-                                        register={register(`titulos.0.${titulo}`)}
-                                        error={errors.titulos?.[0]?.[titulo]}
-                                    />
-                                ))}
+                                {/* Campo de temporada para o time já coberto pelo camposTime */}
                             </div>
 
                             <div className="bg-[#2C2C34] py-4 px-6 flex justify-end">
                                 <button
                                     type="submit"
                                     className="bg-[#63E300] text-black px-6 py-2 rounded-lg font-medium hover:bg-[#50B800] transition-colors"
+                                    disabled={isSubmittingTime}
                                 >
-                                    Adicionar Time
+                                    {isSubmittingTime ? "Adicionando..." : "Adicionar Time"}
                                 </button>
                             </div>
                         </form>
                     </div>
                 )}
 
-                {/* Seção de Adicionar Jogador */}
+                {/* Seção de Adicionar Jogador - NOVA ABA */}
                 {activeTab === 'jogador' && (
                     <div className="animate-fadeIn">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-white">Adicionar Jogador</h2>
                             <span className="bg-[#272731] px-3 py-1 rounded-full text-xs text-gray-400">
-                                Temporada {jogadorTemporada}
+                                Temporada {temporadaSelecionada}
                             </span>
                         </div>
 
@@ -328,70 +317,49 @@ export const Times = () => {
                                 className="bg-[#272731] rounded-xl shadow-lg overflow-hidden"
                             >
                                 <div className="p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
-                                        {/* Campo de Seleção do Time */}
+                                    {/* Informações básicas do jogador */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+                                        {/* Campo de seleção do time */}
                                         <FormField
                                             label="Time"
                                             id="timeId"
                                             register={registerJogador("timeId", {
                                                 setValueAs: (v) => (v === "" ? undefined : parseInt(v)),
                                             })}
-                                            error={jogadorErrors.timeId as FieldError | undefined}
+                                            error={jogadoresErrors.timeId as unknown as any}
                                             type="select"
                                             options={times
                                                 .filter((time) => time.id !== undefined && time.nome !== undefined)
                                                 .map((time) => ({ value: time.id as number, label: time.nome as string }))}
                                         />
 
-                                        {/* Campo de temporada para jogador */}
-                                        <div className="mb-1">
-                                            <label className="block text-white text-sm font-medium mb-2">
-                                                Temporada
-                                            </label>
-                                            <select
-                                                value={jogadorTemporada}
-                                                onChange={(e) => setJogadorTemporada(e.target.value)}
-                                                className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-                                            >
-                                                <option value="2024">2024</option>
-                                                <option value="2025">2025</option>
-                                            </select>
-                                        </div>
+                                        {/* Outros campos do jogador */}
+                                        {camposJogador.filter(field => field.id !== 'timeId').map((field) => {
+                                            // Certifique-se de que o tipo seja válido
+                                            const validType = field.type === 'number' || field.type === 'text' || field.type === 'select'
+                                                ? field.type
+                                                : 'text'; // Valor padrão, se o tipo não for um dos permitidos
 
-                                        {/* Campos do Jogador */}
-                                        {camposJogador.map((field) => (
-                                            <FormField
-                                                key={field.id}
-                                                label={field.label}
-                                                id={field.id}
-                                                register={registerJogador(field.id)}
-                                                error={jogadorErrors[field.id] as FieldError | undefined}
-                                                type={field.type === "number" || field.type === "select" ? field.type : "text"}
-                                                options={field.options}
-                                            />
-                                        ))}
-
-                                        {/* Campos Numéricos do Jogador */}
-                                        {camposNumericosJogador.map((field) => (
-                                            <FormField
-                                                key={field.id}
-                                                label={field.label}
-                                                id={field.id}
-                                                register={registerJogador(field.id, {
-                                                    setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
-                                                })}
-                                                error={jogadorErrors[field.id] as FieldError | undefined}
-                                                type="number"
-                                                step={field.id === "altura" ? "0.01" : "1"}
-                                            />
-                                        ))}
+                                            return (
+                                                <FormField
+                                                    key={field.id}
+                                                    label={field.label}
+                                                    id={field.id}
+                                                    register={registerJogador(field.id)}
+                                                    error={jogadoresErrors[field.id] as unknown as any}
+                                                    type={validType}
+                                                    options={field.options}
+                                                />
+                                            );
+                                        })}
                                     </div>
 
+                                    {/* Seção de Estatísticas */}
                                     <div className="border-t border-gray-700 pt-6 pb-2">
                                         <h3 className="text-xl font-bold text-white mb-4">Estatísticas do Jogador</h3>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         {estatisticas.map((grupo) => (
                                             <div key={grupo.group} className="bg-[#1C1C24] p-4 rounded-lg">
                                                 {/* Cabeçalho clicável do grupo de estatísticas */}
@@ -400,7 +368,7 @@ export const Times = () => {
                                                     onClick={() => toggleGroup(grupo.group)}
                                                     className="w-full text-left flex justify-between items-center text-lg font-bold mb-2 text-[#63E300]"
                                                 >
-                                                    <span>{grupo.group.toUpperCase()}</span>
+                                                    <span>{grupo.group === 'ataque' ? 'ATAQUE' : 'DEFESA'}</span>
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         className={`h-5 w-5 transition-transform ${expandedGroups[grupo.group] ? 'transform rotate-180' : ''}`}
@@ -419,45 +387,36 @@ export const Times = () => {
                                                         : 'max-h-0 opacity-0'
                                                         }`}
                                                 >
-                                                    {grupo.fields.map((field) => (
-                                                        <FormField
-                                                            key={field.id}
-                                                            label={field.label}
-                                                            id={`estatisticas.${grupo.group}.${field.id}`}
-                                                            register={registerJogador(
-                                                                `estatisticas.${grupo.group}.${field.id}` as keyof JogadorFormData,
-                                                                {
-                                                                    setValueAs: (v) => (v === "" ? undefined : field.type === "string" ? v : Number(v)),
-                                                                }
-                                                            )}
-                                                            error={get(jogadorErrors, `estatisticas.${grupo.group}.${field.id}`) as FieldError | undefined}
-                                                            type={field.type === "string" ? "text" : "number"}
-                                                        />
-                                                    ))}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {grupo.fields.map((field) => (
+                                                            <FormField
+                                                                key={field.id}
+                                                                label={field.label}
+                                                                id={`estatisticas.${grupo.group}.${field.id}`}
+                                                                register={registerJogador(
+                                                                    `estatisticas.${grupo.group}.${field.id}` as any,
+                                                                    {
+                                                                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                                                                    }
+                                                                )}
+                                                                error={jogadoresErrors.estatisticas as unknown as any}
+                                                                type="number"
+                                                            />
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-
                                 </div>
 
                                 <div className="bg-[#2C2C34] py-4 px-6 flex justify-end">
                                     <button
                                         type="submit"
-                                        disabled={isSubmitting}
-                                        className="bg-[#63E300] text-black px-6 py-2 rounded-lg font-medium hover:bg-[#50B800] transition-colors disabled:bg-gray-600 disabled:text-gray-400"
+                                        className="bg-[#63E300] text-black px-6 py-2 rounded-lg font-medium hover:bg-[#50B800] transition-colors"
+                                        disabled={isSubmittingJogador}
                                     >
-                                        {isSubmitting ? (
-                                            <span className="flex items-center">
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Adicionando...
-                                            </span>
-                                        ) : (
-                                            "Adicionar Jogador"
-                                        )}
+                                        {isSubmittingJogador ? "Adicionando..." : "Adicionar Jogador"}
                                     </button>
                                 </div>
                             </form>
@@ -582,7 +541,7 @@ export const Times = () => {
             {isSuccessModalOpen && (
                 <ModalSucesso
                     mensagem={successMessage}
-                    onClose={() => setIsSuccessModalOpen(true)}
+                    onClose={() => setIsSuccessModalOpen(false)}
                 />
             )}
 

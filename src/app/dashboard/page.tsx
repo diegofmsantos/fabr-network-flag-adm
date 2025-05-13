@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getTimes, getJogadores } from '@/api/api'
 import { Time } from '@/types/time'
-import { Jogador } from '@/types/jogador'
 import Image from 'next/image'
 
 // Interfaces para relatórios
@@ -12,13 +11,13 @@ interface Relatorio {
     id: string
     titulo: string
     descricao: string
-    executar: (times: Time[], jogadores: Jogador[]) => any
+    executar: (times: Time[], jogadores: any[]) => any
 }
 
 export default function DashboardPage() {
     const [times, setTimes] = useState<Time[]>([])
-    const [jogadores, setJogadores] = useState<Jogador[]>([])
-    const [temporada, setTemporada] = useState("2024")
+    const [jogadores, setJogadores] = useState<any[]>([])
+    const [temporada, setTemporada] = useState("2025")
     const [loading, setLoading] = useState(true)
     const [filtroAtivo, setFiltroAtivo] = useState<string | null>(null)
     const [resultados, setResultados] = useState<any>(null)
@@ -41,219 +40,223 @@ export default function DashboardPage() {
         carregarDados()
     }, [temporada])
 
-    // Lista de relatórios pré-definidos
+    // Lista de relatórios adaptados para flag football
     const relatorios: Relatorio[] = [
         {
-            id: "jogadores-nacionalidade",
-            titulo: "Jogadores por Nacionalidade",
-            descricao: "Exibe a quantidade de jogadores por país",
+            id: "jogadores-time",
+            titulo: "Jogadores por Time",
+            descricao: "Exibe a quantidade de jogadores por time",
             executar: (times, jogadores) => {
-                const nacionalidades: { [key: string]: number } = {}
+                const jogadoresPorTime: { [key: string]: number } = {}
+                times.forEach(time => {
+                    jogadoresPorTime[time.nome || ''] = 0;
+                });
+                
                 jogadores.forEach(jogador => {
-                    if (jogador.nacionalidade) {
-                        nacionalidades[jogador.nacionalidade] = (nacionalidades[jogador.nacionalidade] || 0) + 1
-                    }
-                })
-                return {
-                    tipo: 'tabela',
-                    cabecalho: ['Nacionalidade', 'Quantidade'],
-                    dados: Object.entries(nacionalidades)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([nacionalidade, quantidade]) => [nacionalidade, quantidade]),
-                    resumo: `Total de ${jogadores.length} jogadores, sendo ${Object.keys(nacionalidades).length} nacionalidades diferentes.`
-                }
-            }
-        },
-        {
-            id: "jogadores-posicao-setor",
-            titulo: "Jogadores por Posição e Setor",
-            descricao: "Exibe a quantidade de jogadores por posição, agrupados por setor",
-            executar: (times, jogadores) => {
-                const posicoes: { [key: string]: { [key: string]: number } } = {
-                    "Ataque": {},
-                    "Defesa": {},
-                    "Special": {}
-                }
-
-                jogadores.forEach(jogador => {
-                    if (jogador.posicao && jogador.setor) {
-                        if (!posicoes[jogador.setor]) {
-                            posicoes[jogador.setor] = {}
-                        }
-                        posicoes[jogador.setor][jogador.posicao] = (posicoes[jogador.setor][jogador.posicao] || 0) + 1
-                    }
-                })
-
-                return {
-                    tipo: 'tabela-agrupada',
-                    grupos: Object.keys(posicoes),
-                    dados: Object.entries(posicoes).map(([setor, pos]) => ({
-                        nome: setor,
-                        itens: Object.entries(pos)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([posicao, quantidade]) => ({ nome: posicao, valor: quantidade }))
-                    }))
-                }
-            }
-        },
-        {
-            id: "idade-media",
-            titulo: "Idade Média dos Jogadores",
-            descricao: "Exibe a idade média dos jogadores por time",
-            executar: (times, jogadores) => {
-                const idadesPorTime: { [key: string]: { total: number, quantidade: number } } = {}
-
-                jogadores.forEach(jogador => {
-                    if (jogador.idade && jogador.timeId) {
-                        const time = times.find(t => t.id === jogador.timeId)
+                    if (jogador.timeId) {
+                        const time = times.find(t => t.id === jogador.timeId);
                         if (time && time.nome) {
-                            if (!idadesPorTime[time.nome]) {
-                                idadesPorTime[time.nome] = { total: 0, quantidade: 0 }
-                            }
-                            idadesPorTime[time.nome].total += jogador.idade
-                            idadesPorTime[time.nome].quantidade += 1
+                            jogadoresPorTime[time.nome] = (jogadoresPorTime[time.nome] || 0) + 1;
                         }
                     }
-                })
-
-                const idadeGeral = { total: 0, quantidade: 0 }
-
-                const resultado = Object.entries(idadesPorTime).map(([time, dados]) => {
-                    idadeGeral.total += dados.total
-                    idadeGeral.quantidade += dados.quantidade
-                    return [
-                        time,
-                        (dados.total / dados.quantidade).toFixed(1),
-                        dados.quantidade
-                    ]
-                }).sort((a, b) => parseFloat(b[1] as string) - parseFloat(a[1] as string))
-
+                });
+                
                 return {
                     tipo: 'tabela',
-                    cabecalho: ['Time', 'Idade Média', 'Nº de Jogadores'],
-                    dados: resultado,
-                    resumo: `Idade média geral: ${(idadeGeral.total / idadeGeral.quantidade).toFixed(1)} anos`
-                }
-            }
-        },
-        {
-            id: "altura-peso-medio",
-            titulo: "Altura e Peso Médio por Posição",
-            descricao: "Exibe a altura e peso médio dos jogadores por posição",
-            executar: (times, jogadores) => {
-                const posicoes: { [key: string]: { altura: number, peso: number, quantidade: number } } = {}
-
-                jogadores.forEach(jogador => {
-                    if (jogador.posicao && jogador.altura && jogador.peso) {
-                        if (!posicoes[jogador.posicao]) {
-                            posicoes[jogador.posicao] = { altura: 0, peso: 0, quantidade: 0 }
-                        }
-                        posicoes[jogador.posicao].altura += jogador.altura
-                        posicoes[jogador.posicao].peso += jogador.peso
-                        posicoes[jogador.posicao].quantidade += 1
-                    }
-                })
-
-                return {
-                    tipo: 'tabela',
-                    cabecalho: ['Posição', 'Altura Média (m)', 'Peso Médio (kg)', 'Quantidade'],
-                    dados: Object.entries(posicoes)
-                        .filter(([_, dados]) => dados.quantidade > 0)
-                        .map(([posicao, dados]) => [
-                            posicao,
-                            (dados.altura / dados.quantidade).toFixed(2),
-                            (dados.peso / dados.quantidade).toFixed(1),
-                            dados.quantidade
-                        ])
-                        .sort((a, b) => parseFloat(b[1] as string) - parseFloat(a[1] as string))
-                }
-            }
-        },
-        {
-            id: "estatisticas-jogadores",
-            titulo: "Top 10 Jogadores por Estatística",
-            descricao: "Exibe os jogadores com melhores estatísticas em diversas categorias",
-            executar: (times, jogadores) => {
-                // Função auxiliar para obter o valor da estatística
-                const getEstatistica = (jogador: Jogador, grupo: string, campo: string) => {
-                    if (!jogador.estatisticas) return 0
-                    // @ts-ignore
-                    return jogador.estatisticas[grupo]?.[campo] || 0
-                }
-
-                // Categorias de estatísticas para analisar
-                const categorias = [
-                    { grupo: 'passe', campo: 'jardas_de_passe', titulo: 'Jardas de Passe' },
-                    { grupo: 'passe', campo: 'td_passados', titulo: 'Touchdowns Passados' },
-                    { grupo: 'corrida', campo: 'jardas_corridas', titulo: 'Jardas Corridas' },
-                    { grupo: 'corrida', campo: 'tds_corridos', titulo: 'Touchdowns Corridos' },
-                    { grupo: 'recepcao', campo: 'recepcoes', titulo: 'Recepções' },
-                    { grupo: 'recepcao', campo: 'jardas_recebidas', titulo: 'Jardas Recebidas' },
-                    { grupo: 'defesa', campo: 'tackles_totais', titulo: 'Tackles Totais' },
-                    { grupo: 'defesa', campo: 'sacks_forcado', titulo: 'Sacks' }
-                ]
-
-                const resultados = categorias.map(categoria => {
-                    const top10 = jogadores
-                        .filter(j => getEstatistica(j, categoria.grupo, categoria.campo) > 0)
-                        .sort((a, b) =>
-                            getEstatistica(b, categoria.grupo, categoria.campo) -
-                            getEstatistica(a, categoria.grupo, categoria.campo)
-                        )
-                        .slice(0, 10)
-                        .map(j => {
-                            const time = times.find(t => t.id === j.timeId)
-                            return {
-                                jogador: j.nome,
-                                time: time?.sigla || 'N/A',
-                                valor: getEstatistica(j, categoria.grupo, categoria.campo)
-                            }
-                        })
-
-                    return {
-                        categoria: categoria.titulo,
-                        jogadores: top10
-                    }
-                })
-
-                return {
-                    tipo: 'multi-tabela',
-                    tabelas: resultados.map(r => ({
-                        titulo: `Top 10 - ${r.categoria}`,
-                        cabecalho: ['Jogador', 'Time', 'Valor'],
-                        dados: r.jogadores.map(j => [j.jogador, j.time, j.valor])
-                    }))
-                }
-            }
-        },
-        {
-            id: "jogadores-por-estado",
-            titulo: "Jogadores por Estado",
-            descricao: "Exibe a quantidade de jogadores por estado brasileiro",
-            executar: (times, jogadores) => {
-                const estadosCount: { [key: string]: number } = {}
-
-                jogadores.forEach(jogador => {
-                    if (jogador.cidade) {
-                        // Extrai o estado do formato "Cidade/UF"
-                        const partes = jogador.cidade.split('/')
-                        if (partes.length > 1) {
-                            const estado = partes[1]
-                            estadosCount[estado] = (estadosCount[estado] || 0) + 1
-                        }
-                    }
-                })
-
-                return {
-                    tipo: 'tabela',
-                    cabecalho: ['Estado', 'Quantidade', 'Porcentagem'],
-                    dados: Object.entries(estadosCount)
+                    cabecalho: ['Time', 'Quantidade de Jogadores'],
+                    dados: Object.entries(jogadoresPorTime)
                         .sort((a, b) => b[1] - a[1])
-                        .map(([estado, quantidade]) => [
-                            estado,
-                            quantidade,
-                            ((quantidade / jogadores.length) * 100).toFixed(1) + "%"
-                        ])
+                        .map(([time, quantidade]) => [time, quantidade]),
+                    resumo: `Total de ${jogadores.length} jogadores distribuídos em ${times.length} times.`
+                }
+            }
+        },
+        {
+            id: "top-passadores",
+            titulo: "Top Passadores",
+            descricao: "Lista os jogadores com mais touchdowns passados",
+            executar: (times, jogadores) => {
+                // Filtrar jogadores com estatísticas de passes
+                const passadores = jogadores
+                    .filter(j => 
+                        j.estatisticas?.ataque?.td_passado || 
+                        j.estatisticas?.ataque?.passes_completos || 
+                        j.estatisticas?.ataque?.passes_tentados
+                    )
+                    .map(j => {
+                        const time = times.find(t => t.id === j.timeId);
+                        return {
+                            jogador: j.nome,
+                            time: time?.sigla || '-',
+                            timeNome: time?.nome || '-',
+                            td_passado: j.estatisticas?.ataque?.td_passado || 0,
+                            passes_completos: j.estatisticas?.ataque?.passes_completos || 0,
+                            passes_tentados: j.estatisticas?.ataque?.passes_tentados || 0,
+                            percentual: j.estatisticas?.ataque?.passes_tentados ? 
+                                ((j.estatisticas?.ataque?.passes_completos / j.estatisticas?.ataque?.passes_tentados) * 100).toFixed(1) : '0',
+                        }
+                    })
+                    .sort((a, b) => b.td_passado - a.td_passado || b.passes_completos - a.passes_completos);
+
+                return {
+                    tipo: 'tabela',
+                    cabecalho: ['Jogador', 'Time', 'TD Passados', 'Passes Comp/Tent', '%'],
+                    dados: passadores.slice(0, 10).map(p => [
+                        p.jogador, 
+                        p.time, 
+                        p.td_passado, 
+                        `${p.passes_completos}/${p.passes_tentados}`,
+                        `${p.percentual}%`
+                    ]),
+                    resumo: `Top ${Math.min(10, passadores.length)} passadores da temporada ${temporada}`
+                }
+            }
+        },
+        {
+            id: "top-recebedores",
+            titulo: "Top Recebedores",
+            descricao: "Lista os jogadores com mais touchdowns recebidos",
+            executar: (times, jogadores) => {
+                // Filtrar jogadores com estatísticas de recepção
+                const recebedores = jogadores
+                    .filter(j => 
+                        j.estatisticas?.ataque?.td_recebido || 
+                        j.estatisticas?.ataque?.recepcao
+                    )
+                    .map(j => {
+                        const time = times.find(t => t.id === j.timeId);
+                        return {
+                            jogador: j.nome,
+                            time: time?.sigla || '-',
+                            timeNome: time?.nome || '-',
+                            td_recebido: j.estatisticas?.ataque?.td_recebido || 0,
+                            recepcao: j.estatisticas?.ataque?.recepcao || 0,
+                            alvo: j.estatisticas?.ataque?.alvo || 0,
+                            percentual: j.estatisticas?.ataque?.alvo ? 
+                                ((j.estatisticas?.ataque?.recepcao / j.estatisticas?.ataque?.alvo) * 100).toFixed(1) : '0',
+                        }
+                    })
+                    .sort((a, b) => b.td_recebido - a.td_recebido || b.recepcao - a.recepcao);
+
+                return {
+                    tipo: 'tabela',
+                    cabecalho: ['Jogador', 'Time', 'TD Recebidos', 'Recepções', 'Alvos', '%'],
+                    dados: recebedores.slice(0, 10).map(r => [
+                        r.jogador, 
+                        r.time, 
+                        r.td_recebido, 
+                        r.recepcao,
+                        r.alvo,
+                        `${r.percentual}%`
+                    ]),
+                    resumo: `Top ${Math.min(10, recebedores.length)} recebedores da temporada ${temporada}`
+                }
+            }
+        },
+        {
+            id: "top-defesas",
+            titulo: "Top Defensores",
+            descricao: "Lista os jogadores com mais flags retiradas",
+            executar: (times, jogadores) => {
+                // Filtrar jogadores com estatísticas defensivas
+                const defensores = jogadores
+                    .filter(j => 
+                        j.estatisticas?.defesa?.flag_retirada || 
+                        j.estatisticas?.defesa?.interceptacao_forcada ||
+                        j.estatisticas?.defesa?.sack
+                    )
+                    .map(j => {
+                        const time = times.find(t => t.id === j.timeId);
+                        return {
+                            jogador: j.nome,
+                            time: time?.sigla || '-',
+                            timeNome: time?.nome || '-',
+                            flag_retirada: j.estatisticas?.defesa?.flag_retirada || 0,
+                            sack: j.estatisticas?.defesa?.sack || 0,
+                            interceptacao: j.estatisticas?.defesa?.interceptacao_forcada || 0,
+                            passe_desviado: j.estatisticas?.defesa?.passe_desviado || 0,
+                            td_defensivo: j.estatisticas?.defesa?.td_defensivo || 0
+                        }
+                    })
+                    .sort((a, b) => b.flag_retirada - a.flag_retirada);
+
+                return {
+                    tipo: 'tabela',
+                    cabecalho: ['Jogador', 'Time', 'Flags Ret.', 'Sacks', 'INT', 'Passes Desv.', 'TD Def.'],
+                    dados: defensores.slice(0, 10).map(d => [
+                        d.jogador, 
+                        d.time, 
+                        d.flag_retirada, 
+                        d.sack,
+                        d.interceptacao,
+                        d.passe_desviado,
+                        d.td_defensivo
+                    ]),
+                    resumo: `Top ${Math.min(10, defensores.length)} defensores da temporada ${temporada}`
+                }
+            }
+        },
+        {
+            id: "td-por-time",
+            titulo: "Touchdowns por Time",
+            descricao: "Mostra o total de touchdowns por time (passes, corridas e recepções)",
+            executar: (times, jogadores) => {
+                const touchdownsPorTime: { [key: string]: { [key: string]: number } } = {};
+                
+                // Inicializar todos os times
+                times.forEach(time => {
+                    if (time.nome) {
+                        touchdownsPorTime[time.nome] = {
+                            passados: 0,
+                            corridos: 0,
+                            recebidos: 0,
+                            defensivos: 0,
+                            total: 0
+                        };
+                    }
+                });
+                
+                // Calcular TDs por time
+                jogadores.forEach(jogador => {
+                    if (jogador.timeId) {
+                        const time = times.find(t => t.id === jogador.timeId);
+                        if (time && time.nome) {
+                            // TDs passados
+                            const tdPassados = jogador.estatisticas?.ataque?.td_passado || 0;
+                            touchdownsPorTime[time.nome].passados += tdPassados;
+                            
+                            // TDs corridos
+                            const tdCorridos = jogador.estatisticas?.ataque?.tds_corridos || 0;
+                            touchdownsPorTime[time.nome].corridos += tdCorridos;
+                            
+                            // TDs recebidos
+                            const tdRecebidos = jogador.estatisticas?.ataque?.td_recebido || 0;
+                            touchdownsPorTime[time.nome].recebidos += tdRecebidos;
+                            
+                            // TDs defensivos
+                            const tdDefensivos = jogador.estatisticas?.defesa?.td_defensivo || 0;
+                            touchdownsPorTime[time.nome].defensivos += tdDefensivos;
+                            
+                            // Total
+                            touchdownsPorTime[time.nome].total += tdPassados + tdCorridos + tdRecebidos + tdDefensivos;
+                        }
+                    }
+                });
+                
+                return {
+                    tipo: 'tabela',
+                    cabecalho: ['Time', 'TD Passados', 'TD Corridos', 'TD Recebidos', 'TD Defensivos', 'Total TDs'],
+                    dados: Object.entries(touchdownsPorTime)
+                        .sort((a, b) => b[1].total - a[1].total)
+                        .map(([time, tds]) => [
+                            time,
+                            tds.passados,
+                            tds.corridos,
+                            tds.recebidos,
+                            tds.defensivos,
+                            tds.total
+                        ]),
+                    resumo: `Touchdowns por time na temporada ${temporada}`
                 }
             }
         }
@@ -375,22 +378,6 @@ export default function DashboardPage() {
         }
     }
 
-    // Formulário de filtros personalizados
-    const renderizarFormularioFiltros = () => {
-        return (
-            <div className="bg-[#272731] p-6 rounded-lg mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Filtros Personalizados</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Form para filtros avançados a ser implementado */}
-                    <p className="text-gray-400 col-span-3">
-                        Funcionalidade de filtros personalizados em desenvolvimento.
-                        Por enquanto, utilize os relatórios pré-definidos abaixo.
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
     if (loading) {
         return (
             <div className="min-h-screen bg-[#1C1C24] p-6 flex justify-center items-center">
@@ -422,8 +409,8 @@ export default function DashboardPage() {
                                 onChange={(e) => setTemporada(e.target.value)}
                                 className="bg-[#1C1C24] text-white px-2 py-1 rounded border border-gray-700"
                             >
-                                <option value="2024">2024</option>
                                 <option value="2025">2025</option>
+                                <option value="2026">2026</option>
                             </select>
                         </div>
                         <div className="flex ml-auto gap-4 mr-4">
@@ -444,8 +431,8 @@ export default function DashboardPage() {
 
             <div className="mb-6 bg-[#272731] p-4 rounded-lg text-gray-300">
                 <p>
-                    Utilize esta página para gerar relatórios e insights sobre os times e jogadores do campeonato.
-                    Selecione um dos relatórios pré-definidos abaixo ou crie filtros personalizados.
+                    Utilize esta página para gerar relatórios e insights sobre os times e jogadores da temporada {temporada}.
+                    Selecione um dos relatórios pré-definidos abaixo.
                 </p>
             </div>
 
@@ -468,12 +455,9 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Formulário de filtros personalizados */}
-                {renderizarFormularioFiltros()}
-
                 {/* Relatórios pré-definidos */}
                 <div className="bg-[#272731] p-6 rounded-lg">
-                    <h3 className="text-xl font-bold text-white mb-4">Relatórios Pré-definidos</h3>
+                    <h3 className="text-xl font-bold text-white mb-4">Relatórios</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         {relatorios.map((relatorio) => (
                             <div
@@ -506,3 +490,4 @@ export default function DashboardPage() {
         </div>
     )
 }
+                                                    

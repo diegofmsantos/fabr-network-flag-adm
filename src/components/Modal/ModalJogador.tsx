@@ -1,11 +1,10 @@
+// src/components/Modal/ModalJogador.tsx
 "use client"
 
 import { useState } from "react";
 import { atualizarJogador, deletarJogador } from "@/api/api";
-import { Estatisticas, Jogador } from "@/types/jogador";
+import { Jogador } from "@/types/jogador";
 import { useRouter } from "next/navigation";
-import { estatisticasGroups } from "@/utils/stats";
-import { jogadorGroups } from "@/utils/jogador";
 
 export default function ModalJogador({
     jogador,
@@ -18,10 +17,10 @@ export default function ModalJogador({
     
     const [formData, setFormData] = useState({
         ...jogador,
-        altura: jogador.altura !== undefined ? String(jogador.altura).replace(".", ",") : "",
-        temporada: jogador.times?.[0]?.temporada || "2025",
-        estatisticas: jogador.estatisticas || {},
-        camisa: jogador.camisa 
+        estatisticas: jogador.estatisticas || {
+            ataque: {},
+            defesa: {}
+        },
     });
     
     const [activeTab, setActiveTab] = useState<'info' | 'estatisticas'>('info');
@@ -29,30 +28,22 @@ export default function ModalJogador({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-
         setFormData((prev) => ({
             ...prev,
-            [name]: name === "altura" || name === "idade" || name === "peso"
-                ? value.replace(",", ".")
-                : value,
+            [name]: value,
         }));
     };
 
     const handleStatisticChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        const [groupKey, fieldKey] = name.split(".") as [keyof Estatisticas, string];
+        const [group, field] = name.split(".");
 
         setFormData((prev) => {
-            const estatisticas = { ...prev.estatisticas } as Estatisticas;
-
-            if (!estatisticas[groupKey]) { //@ts-ignore
-                estatisticas[groupKey] = {};
+            const estatisticas = { ...prev.estatisticas } as any;
+            if (!estatisticas[group]) {
+                estatisticas[group] = {};
             }
-            //@ts-ignore
-            estatisticas[groupKey][fieldKey] = value === "" 
-                ? 0 
-                : (fieldKey.startsWith("fg") ? value : Number(value));
-
+            estatisticas[group][field] = value === "" ? undefined : Number(value);
             return { ...prev, estatisticas };
         });
     };
@@ -60,38 +51,7 @@ export default function ModalJogador({
     const handleSave = async () => {
         setIsSubmitting(true);
         try {
-            console.log("Iniciando atualização do jogador");
-            console.log("Valor da camisa antes do envio:", formData.camisa);
-            
-            // Converter altura corretamente
-            const altura = formData.altura
-                ? Number(String(formData.altura).replace(',', '.'))
-                : jogador.altura;
-    
-            // Garantir conversão adequada dos valores numéricos
-            const parsedValues = {
-                altura: altura,
-                peso: Number(formData.peso),
-                idade: Number(formData.idade),
-                experiencia: Number(formData.experiencia),
-                numero: Number(formData.numero)
-            };
-    
-            // Construir objeto final para envio à API
-            // Cuidado para não duplicar campos que já existem no formData
-            const apiData = {
-                ...formData,          // Incluir todos os campos do formData primeiro
-                ...parsedValues,      // Sobrescrever com valores numéricos convertidos
-                timeId: jogador.timeId // Garantir que timeId esteja presente
-            };
-    
-            console.log("Dados completos enviados para API:", apiData);
-            
-            // Enviar a requisição e aguardar a resposta
-            const response = await atualizarJogador(apiData);
-            console.log("Resposta da API após atualização:", response);
-            
-            // Fechar o modal e atualizar a UI
+            await atualizarJogador(formData);
             closeModal();
             router.refresh();
         } catch (error) {
@@ -106,9 +66,9 @@ export default function ModalJogador({
         if (confirm("Tem certeza que deseja excluir este jogador?")) {
             setIsSubmitting(true);
             try {
-                await deletarJogador(jogador.id);
+                await deletarJogador(jogador.id!);
                 closeModal();
-                router.refresh(); // Força recarregamento
+                router.refresh();
             } catch (error) {
                 console.error("Erro ao excluir jogador:", error);
             } finally {
@@ -116,6 +76,39 @@ export default function ModalJogador({
             }
         }
     };
+
+    // Definição dos grupos de estatísticas para exibição
+    const estatisticasGrupos = [
+        {
+            id: 'ataque',
+            titulo: 'Ataque',
+            campos: [
+                { id: 'passes_completos', label: 'PASSES COMPLETOS' },
+                { id: 'passes_tentados', label: 'PASSES TENTADOS' },
+                { id: 'td_passado', label: 'TD PASSADOS' },
+                { id: 'interceptacoes_sofridas', label: 'INTERCEPTAÇÕES SOFRIDAS' },
+                { id: 'sacks_sofridos', label: 'SACKS SOFRIDOS' },
+                { id: 'corrida', label: 'JARDAS CORRIDAS' },
+                { id: 'tds_corridos', label: 'TDS CORRIDOS' },
+                { id: 'recepcao', label: 'RECEPÇÕES' },
+                { id: 'alvo', label: 'ALVO' },
+                { id: 'td_recebido', label: 'TDS RECEBIDOS' }
+            ]
+        },
+        {
+            id: 'defesa',
+            titulo: 'Defesa',
+            campos: [
+                { id: 'sack', label: 'SACK' },
+                { id: 'pressao', label: 'PRESSÃO' },
+                { id: 'flag_retirada', label: 'FLAG RETIRADA' },
+                { id: 'flag_perdida', label: 'FLAG PERDIDA' },
+                { id: 'passe_desviado', label: 'PASSE DESVIADO' },
+                { id: 'interceptacao_forcada', label: 'INTERCEPTAÇÃO FORÇADA' },
+                { id: 'td_defensivo', label: 'TD DEFENSIVO' }
+            ]
+        }
+    ];
 
     return (
         <div className="fixed inset-0 z-50 overflow-hidden">
@@ -133,7 +126,7 @@ export default function ModalJogador({
                         <div 
                             className="w-8 h-8 rounded-md mr-3 flex items-center justify-center bg-[#63E300]"
                         >
-                            <span className="text-black font-bold">{formData.numero}</span>
+                            <span className="text-black font-bold">{formData.numero || '#'}</span>
                         </div>
                         <h2 className="text-xl font-bold text-white">
                             {formData.nome || 'Editar Jogador'}
@@ -188,69 +181,75 @@ export default function ModalJogador({
                     {/* Tab de informações do jogador */}
                     {activeTab === 'info' && (
                         <div className="space-y-6 animate-fadeIn">
-                            {jogadorGroups.map((group, groupIndex) => (
-                                <div key={groupIndex} className="bg-[#1C1C24] rounded-lg p-5">
-                                    <h3 className="text-[#63E300] font-semibold mb-4 text-sm uppercase tracking-wide">
-                                        {group.title}
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {group.fields.map((field) => (
-                                            <div key={field.name}>
-                                                <label className="block text-white text-sm font-medium mb-2">
-                                                    {field.label}
-                                                </label>
-                                                {field.type === "select" ? (
-                                                    <select
-                                                        name={field.name}
-                                                        value={formData[field.name as keyof typeof formData] as string}
-                                                        onChange={(e) => setFormData((prev) => ({ ...prev, [field.name]: e.target.value }))}
-                                                        className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-                                                    >
-                                                        <option value="">Selecione uma opção</option>
-                                                        {field.options?.map((option) => (
-                                                            <option key={option} value={option}>
-                                                                {option}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <input
-                                                        type={field.type}
-                                                        name={field.name}
-                                                        value={formData[field.name as keyof typeof formData] as string}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-                                                    />
-                                                )}
-                                            </div>
-                                        ))}
+                            <div className="bg-[#1C1C24] rounded-lg p-5">
+                                <h3 className="text-[#63E300] font-semibold mb-4 text-sm uppercase tracking-wide">
+                                    Informações Básicas
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-white text-sm font-medium mb-2">
+                                            Nome
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="nome"
+                                            value={formData.nome || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-white text-sm font-medium mb-2">
+                                            Número
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="numero"
+                                            value={formData.numero || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-white text-sm font-medium mb-2">
+                                            Camisa (Nome)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="camisa"
+                                            value={formData.camisa || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                        />
                                     </div>
                                 </div>
-                            ))}
+                            </div>
                         </div>
                     )}
                     
                     {/* Tab de estatísticas */}
                     {activeTab === 'estatisticas' && (
                         <div className="space-y-6 animate-fadeIn">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                {estatisticasGroups.map((group) => (
-                                    <div key={group.id} className="bg-[#1C1C24] rounded-lg p-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {estatisticasGrupos.map((grupo) => (
+                                    <div key={grupo.id} className="bg-[#1C1C24] rounded-lg p-5">
                                         <h3 className="text-[#63E300] font-semibold mb-4 text-sm uppercase tracking-wide">
-                                            {group.title}
+                                            {grupo.titulo}
                                         </h3>
                                         <div className="space-y-3">
-                                            {group.fields.map((field) => (
-                                                <div key={field.id} className="flex flex-col">
+                                            {grupo.campos.map((campo) => (
+                                                <div key={campo.id} className="flex flex-col">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <label className="text-xs text-gray-400 font-medium">
-                                                            {field.label}
+                                                            {campo.label}
                                                         </label>
                                                         <div className="flex items-center bg-[#272731] px-2 py-0.5 rounded text-xs">
                                                             <input
                                                                 type="text"
-                                                                name={`${group.id}.${field.id}`} // @ts-ignore
-                                                                value={formData.estatisticas[group.id as keyof Estatisticas]?.[field.id as any] ?? 0}
+                                                                name={`${grupo.id}.${campo.id}`}
+                                                                value={(formData.estatisticas as any)?.[grupo.id]?.[campo.id] ?? ""}
                                                                 onChange={handleStatisticChange}
                                                                 className="w-16 bg-transparent text-right border-none focus:outline-none text-white"
                                                             />
@@ -261,9 +260,9 @@ export default function ModalJogador({
                                                             className="bg-[#63E300] h-1.5 rounded-full" 
                                                             style={{ 
                                                                 width: `${Math.min(
-                                                                    100, // @ts-ignore
-                                                                    (Number(formData.estatisticas[group.id as keyof Estatisticas]?.[field.id as any]) / 
-                                                                    (field.id.includes('jardasde') ? 500 : 100)) * 100
+                                                                    100,
+                                                                    (Number((formData.estatisticas as any)?.[grupo.id]?.[campo.id] || 0) / 
+                                                                    (campo.id.includes('jardas') ? 500 : 100)) * 100
                                                                 )}%` 
                                                             }}
                                                         ></div>
@@ -348,6 +347,6 @@ export default function ModalJogador({
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
-            </div>
+        </div>
     );
 }

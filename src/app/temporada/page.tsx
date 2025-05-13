@@ -1,3 +1,4 @@
+// src/app/temporada/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -18,8 +19,8 @@ export default function IniciarTemporadaPage() {
   const [message, setMessage] = useState("");
 
   // Estado para temporadas
-  const [currentSeason, setCurrentSeason] = useState("2024");
-  const [targetSeason, setTargetSeason] = useState("2025");
+  const [currentSeason, setCurrentSeason] = useState("2025");
+  const [targetSeason, setTargetSeason] = useState("2026");
 
   // Carregar times e jogadores
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function IniciarTemporadaPage() {
               height={100}
             />
           </Link>
-          <h1 className="text-4xl text-[#63E300] font-extrabold italic leading-[55px] tracking-[-3px]">GERENCIAR MATÉRIAS - INICIAR TEMPORADA {targetSeason}</h1>
+          <h1 className="text-4xl text-[#63E300] font-extrabold italic leading-[55px] tracking-[-3px]">GERENCIAR TIMES - INICIAR TEMPORADA {targetSeason}</h1>
           <div className="flex ml-auto gap-4 mr-4">
             
             <Link
@@ -174,7 +175,8 @@ export default function IniciarTemporadaPage() {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
               disabled={loading}
             >
-              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
             </select>
           </div>
 
@@ -188,8 +190,8 @@ export default function IniciarTemporadaPage() {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
               disabled={loading}
             >
-              <option value="2025">2025</option>
               <option value="2026">2026</option>
+              <option value="2027">2027</option>
             </select>
           </div>
         </div>
@@ -209,11 +211,11 @@ export default function IniciarTemporadaPage() {
       />
 
       {/* Lista de alterações de times */}
-      {timeChanges.length > 0 && (
-        <div className="mt-4 bg-[#272731] p-6 rounded-lg">
-          <h3 className="text-lg font-bold text-white mb-2">Alterações Adicionadas</h3>
-          <div className="space-y-2">
-            {timeChanges.map((change, index) => {
+      <div className="mt-4 bg-[#272731] p-6 rounded-lg">
+        <h3 className="text-lg font-bold text-white mb-2">Alterações Adicionadas ({timeChanges.length})</h3>
+        <div className="space-y-2">
+          {timeChanges.length > 0 ? (
+            timeChanges.map((change, index) => {
               const time = times.find(t => t.id === change.timeId);
               return (
                 <div key={index} className="bg-[#1C1C24] p-3 rounded-lg flex justify-between items-center">
@@ -223,10 +225,9 @@ export default function IniciarTemporadaPage() {
                       {change.nome && <li>Nome: {change.nome}</li>}
                       {change.sigla && <li>Sigla: {change.sigla}</li>}
                       {change.cor && <li>Cor: {change.cor}</li>}
-                      {change.presidente && <li>Presidente: {change.presidente}</li>}
-                      {change.head_coach && <li>Head Coach: {change.head_coach}</li>}
-                      {change.coord_ofen && <li>Coord. Ofensivo: {change.coord_ofen}</li>}
-                      {change.coord_defen && <li>Coord. Defensivo: {change.coord_defen}</li>}
+                      {change.instagram && <li>Instagram: {change.instagram}</li>}
+                      {change.instagram2 && <li>@: {change.instagram2}</li>}
+                      {change.logo && <li>Logo: {change.logo}</li>}
                     </ul>
                   </div>
                   <button
@@ -237,13 +238,15 @@ export default function IniciarTemporadaPage() {
                   </button>
                 </div>
               );
-            })}
-          </div>
+            })
+          ) : (
+            <p className="text-gray-400 text-center py-4">Nenhuma alteração de time adicionada ainda.</p>
+          )}
         </div>
-      )}
+      </div>
 
-       {/* Form de transferências de jogadores */}
-       <PlayerTransferForm
+      {/* Form de transferências de jogadores */}
+      <PlayerTransferForm
         jogadores={jogadores}
         times={times}
         timeChanges={timeChanges} 
@@ -251,11 +254,11 @@ export default function IniciarTemporadaPage() {
       />
 
       {/* Lista de transferências */}
-      {transferencias.length > 0 && (
-        <div className="mt-4 bg-[#272731] p-6 rounded-lg">
-          <h3 className="text-lg font-bold text-white mb-2">Transferências Adicionadas</h3>
-          <div className="space-y-2">
-            {transferencias.map((transfer, index) => (
+      <div className="mt-4 bg-[#272731] p-6 rounded-lg">
+        <h3 className="text-lg font-bold text-white mb-2">Transferências Adicionadas ({transferencias.length})</h3>
+        <div className="space-y-2">
+          {transferencias.length > 0 ? (
+            transferencias.map((transfer, index) => (
               <div key={index} className="bg-[#1C1C24] p-3 rounded-lg flex justify-between items-center">
                 <div>
                   <span className="text-white font-medium">{transfer.jogadorNome}</span>
@@ -270,6 +273,11 @@ export default function IniciarTemporadaPage() {
                         Novo número: {transfer.novoNumero}
                       </span>
                     )}
+                    {transfer.novaCamisa && (
+                      <span className="ml-2">
+                        Nova camisa: {transfer.novaCamisa}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button
@@ -279,19 +287,29 @@ export default function IniciarTemporadaPage() {
                   Remover
                 </button>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <p className="text-gray-400 text-center py-4">Nenhuma transferência adicionada ainda.</p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Botão de envio */}
-      <div className="flex justify-center mt-8">
+      <div className="flex justify-center mt-8 mb-8">
         <button
           onClick={handleSubmit}
           disabled={loading}
           className="bg-[#63E300] text-black px-6 py-3 rounded-lg font-medium text-lg hover:bg-[#50B800] transition-colors disabled:bg-gray-600 disabled:text-gray-400"
         >
-          {loading ? "Processando..." : `Iniciar Temporada ${targetSeason}`}
+          {loading ? (
+            <div className="flex items-center">
+              <svg className="animate-spin h-5 w-5 mr-3 text-black" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processando...
+            </div>
+          ) : `Iniciar Temporada ${targetSeason}`}
         </button>
       </div>
     </div>

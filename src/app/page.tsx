@@ -16,12 +16,6 @@ export default function HomePage() {
       route: '/times'
     },
     {
-      title: 'Matérias',
-      description: 'Crie e edite notícias para o site',
-      icon: '/file.svg',
-      route: '/materia'
-    },
-    {
       title: 'Temporada',
       description: 'Gerencie a transição entre temporadas',
       icon: '/window.svg',
@@ -33,12 +27,7 @@ export default function HomePage() {
       icon: '/globe.svg',
       route: '/dashboard'
     },
-    {
-      title: 'Mercado',
-      description: 'Visualizar transferências de jogadores entre temporadas',
-      icon: '/transfer1.png', // Você precisará adicionar este ícone ou usar um existente
-      route: '/mercado'
-    }
+    
   ]
 
   return (

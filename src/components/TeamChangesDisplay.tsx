@@ -11,7 +11,7 @@ export function TeamChangesDisplay({ timeChanges, times, onRemove }: TeamChanges
   if (timeChanges.length === 0) return null;
   
   return (
-    <div className="mt-4 bg-[#272731] p-6 rounded-lg">
+    <div className="mt-8 bg-[#272731] p-6 rounded-lg">
       <h3 className="text-lg font-bold text-white mb-2">Alterações Adicionadas</h3>
       <div className="space-y-2">
         {timeChanges.map((change, index) => {
