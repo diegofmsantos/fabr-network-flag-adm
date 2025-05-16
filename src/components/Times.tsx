@@ -1,4 +1,3 @@
-// src/components/Times.tsx (modificado para incluir a aba de jogadores)
 "use client"
 
 import { useForm, SubmitHandler } from "react-hook-form"
@@ -13,7 +12,8 @@ import { FormField } from "@/components/Formulario/FormField"
 import ModalTime from "@/components/Modal/ModalTime";
 import ModalJogador from "@/components/Modal/ModalJogador";
 import ModalSucesso from "./Modal/ModalSucesso"
-import { camposTime, camposJogador, estatisticas } from "../utils/campos"
+import { camposTime, camposJogador } from "../utils/campos"
+import { estatisticasGrupos } from "../utils/stats"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -42,7 +42,9 @@ export const Times = () => {
         resolver: zodResolver(JogadorSchema),
         defaultValues: {
             estatisticas: {
-                ataque: {},
+                passe: {},
+                corrida: {},
+                recepcao: {},
                 defesa: {}
             }
         }
@@ -103,23 +105,38 @@ export const Times = () => {
     const onSubmitJogador: SubmitHandler<JogadorFormData> = async (data) => {
         setIsSubmittingJogador(true)
         try {
-            // Garantir que estatísticas não preenchidas sejam removidas
-            // Correção para a filtragem de estatísticas
-            const estatisticasAtaque = Object.fromEntries(
-                Object.entries(data.estatisticas?.ataque || {})
-                    .filter(([_, value]) => value !== undefined && value !== null && value !== 0)
+            // Filtrar campos de estatísticas não preenchidos
+            const estatisticasPasse = Object.fromEntries(
+                Object.entries(data.estatisticas?.passe || {})
+                    .filter(([_, value]) => value !== undefined && value !== null)
+            );
+
+            const estatisticasCorrida = Object.fromEntries(
+                Object.entries(data.estatisticas?.corrida || {})
+                    .filter(([_, value]) => value !== undefined && value !== null)
+            );
+
+            const estatisticasRecepcao = Object.fromEntries(
+                Object.entries(data.estatisticas?.recepcao || {})
+                    .filter(([_, value]) => value !== undefined && value !== null)
             );
 
             const estatisticasDefesa = Object.fromEntries(
                 Object.entries(data.estatisticas?.defesa || {})
-                    .filter(([_, value]) => value !== undefined && value !== null && value !== 0)
+                    .filter(([_, value]) => value !== undefined && value !== null)
             );
+
+            // Adicionar time_nome
+            const timeSelected = times.find(t => t.id === data.timeId);
 
             const jogadorData = {
                 ...data,
+                time_nome: timeSelected?.nome || "",
                 temporada: temporadaSelecionada,
                 estatisticas: {
-                    ataque: estatisticasAtaque,
+                    passe: estatisticasPasse,
+                    corrida: estatisticasCorrida,
+                    recepcao: estatisticasRecepcao,
                     defesa: estatisticasDefesa
                 }
             };
@@ -278,7 +295,33 @@ export const Times = () => {
                                     />
                                 ))}
 
-                                {/* Campo de temporada para o time já coberto pelo camposTime */}
+                                {/* Adicionar os novos campos para o time */}
+                                <FormField
+                                    label="Região"
+                                    id="regiao"
+                                    register={registerTime("regiao")}
+                                    error={timesErrors.regiao as unknown as any}
+                                    type="select"
+                                    options={[
+                                        { value: "Norte", label: "Norte" },
+                                        { value: "Nordeste", label: "Nordeste" },
+                                        { value: "Centro-Oeste", label: "Centro-Oeste" },
+                                        { value: "Sudeste", label: "Sudeste" },
+                                        { value: "Sul", label: "Sul" }
+                                    ]}
+                                />
+                                <FormField
+                                    label="Sexo"
+                                    id="sexo"
+                                    register={registerTime("sexo")}
+                                    error={timesErrors.sexo as unknown as any}
+                                    type="select"
+                                    options={[
+                                        { value: "masculino", label: "Masculino" },
+                                        { value: "feminino", label: "Feminino" },
+                                        { value: "misto", label: "Misto" }
+                                    ]}
+                                />
                             </div>
 
                             <div className="bg-[#2C2C34] py-4 px-6 flex justify-end">
@@ -294,7 +337,7 @@ export const Times = () => {
                     </div>
                 )}
 
-                {/* Seção de Adicionar Jogador - NOVA ABA */}
+                {/* Seção de Adicionar Jogador */}
                 {activeTab === 'jogador' && (
                     <div className="animate-fadeIn">
                         <div className="flex justify-between items-center mb-6">
@@ -360,18 +403,18 @@ export const Times = () => {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        {estatisticas.map((grupo) => (
-                                            <div key={grupo.group} className="bg-[#1C1C24] p-4 rounded-lg">
+                                        {estatisticasGrupos.map((grupo: any) => (
+                                            <div key={grupo.id} className="bg-[#1C1C24] p-4 rounded-lg">
                                                 {/* Cabeçalho clicável do grupo de estatísticas */}
                                                 <button
                                                     type="button"
-                                                    onClick={() => toggleGroup(grupo.group)}
+                                                    onClick={() => toggleGroup(grupo.id)}
                                                     className="w-full text-left flex justify-between items-center text-lg font-bold mb-2 text-[#63E300]"
                                                 >
-                                                    <span>{grupo.group === 'ataque' ? 'ATAQUE' : 'DEFESA'}</span>
+                                                    <span>{grupo.titulo}</span>
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
-                                                        className={`h-5 w-5 transition-transform ${expandedGroups[grupo.group] ? 'transform rotate-180' : ''}`}
+                                                        className={`h-5 w-5 transition-transform ${expandedGroups[grupo.id] ? 'transform rotate-180' : ''}`}
                                                         fill="none"
                                                         viewBox="0 0 24 24"
                                                         stroke="currentColor"
@@ -382,25 +425,30 @@ export const Times = () => {
 
                                                 {/* Conteúdo que aparece/desaparece */}
                                                 <div
-                                                    className={`transition-all duration-300 overflow-hidden ${expandedGroups[grupo.group]
+                                                    className={`transition-all duration-300 overflow-hidden ${expandedGroups[grupo.id]
                                                         ? 'max-h-[1000px] opacity-100'
                                                         : 'max-h-0 opacity-0'
                                                         }`}
                                                 >
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {grupo.fields.map((field) => (
+                                                        {grupo.campos.map((field: any) => (
                                                             <FormField
                                                                 key={field.id}
                                                                 label={field.label}
-                                                                id={`estatisticas.${grupo.group}.${field.id}`}
+                                                                id={`estatisticas.${grupo.id}.${field.id}`}
                                                                 register={registerJogador(
-                                                                    `estatisticas.${grupo.group}.${field.id}` as any,
+                                                                    `estatisticas.${grupo.id}.${field.id}` as any,
                                                                     {
-                                                                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                                                                        setValueAs: (v) => {
+                                                                            if (v === "") return undefined;
+                                                                            // Verificar se o campo é percentual
+                                                                            if (field.id === "pressao_pct") return String(v);
+                                                                            return Number(v);
+                                                                        },
                                                                     }
                                                                 )}
                                                                 error={jogadoresErrors.estatisticas as unknown as any}
-                                                                type="number"
+                                                                type={field.id === "pressao_pct" ? "text" : "number"}
                                                             />
                                                         ))}
                                                     </div>
@@ -484,6 +532,19 @@ export const Times = () => {
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                     </svg>
                                                     {time.jogadores?.length || 0} jogadores
+                                                </div>
+                                                {/* Exibir novos campos */}
+                                                <div className="flex items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Região: {time.regiao || "Não informada"}
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                    Sexo: {time.sexo ? time.sexo.charAt(0).toUpperCase() + time.sexo.slice(1) : "Não informado"}
                                                 </div>
                                             </div>
                                         </div>

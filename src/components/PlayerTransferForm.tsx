@@ -1,4 +1,3 @@
-// components/PlayerTransferForm.tsx
 import { useState, useEffect } from 'react';
 import { Time } from '@/types/time';
 import { Jogador } from '@/types/jogador';
@@ -6,7 +5,7 @@ import { Jogador } from '@/types/jogador';
 interface PlayerTransferFormProps {
   jogadores: Jogador[];
   times: Time[];
-  timeChanges?: TimeChange[]; // Novo prop opcional
+  timeChanges?: TimeChange[]; // Prop opcional
   onAddTransfer: (transfer: Transferencia) => void;
 }
 
@@ -18,6 +17,8 @@ export interface TimeChange {
   instagram?: string;
   instagram2?: string;
   logo?: string;
+  regiao?: string; // Novo campo
+  sexo?: string;   // Novo campo
 }
 
 export interface Transferencia {
@@ -63,7 +64,9 @@ export function PlayerTransferForm({
     const novoTime = times.find(t => t.id === Number(selectedNovoTime));
     if (!novoTime || selectedJogador.timeId === Number(selectedNovoTime)) return;
 
+    // Identifica o time de origem por ID e nome
     const timeOrigem = times.find(t => t.id === selectedJogador.timeId);
+    const timeOrigemNome = timeOrigem?.nome || selectedJogador.time_nome || ''; // Usa o time_nome como fallback
     
     // Verificar se o time de destino terá um novo nome
     const timeDestinoDados = timeChanges.find(tc => tc.timeId === Number(selectedNovoTime));
@@ -73,7 +76,7 @@ export function PlayerTransferForm({
       jogadorId: selectedJogador.id || 0,
       jogadorNome: selectedJogador.nome,
       timeOrigemId: selectedJogador.timeId,
-      timeOrigemNome: timeOrigem?.nome,
+      timeOrigemNome: timeOrigemNome,
       novoTimeId: Number(selectedNovoTime),
       novoTimeNome: novoTimeNome, // Usar nome novo se existir
       novoNumero: novoNumero ? Number(novoNumero) : undefined,
@@ -140,14 +143,17 @@ export function PlayerTransferForm({
                 <div className="px-3 py-2 text-gray-400">Nenhum jogador encontrado</div>
               ) : (
                 filteredJogadores.map(jogador => {
-                  const time = times.find(t => t.id === jogador.timeId);
+                  // Usa time_nome quando disponível, ou busca pelo ID
+                  const timeNome = jogador.time_nome || (times.find(t => t.id === jogador.timeId)?.nome);
+                  const timeSigla = times.find(t => t.id === jogador.timeId)?.sigla;
+                  
                   return (
                     <div
                       key={jogador.id}
                       className="px-3 py-2 hover:bg-[#272731] cursor-pointer text-white"
                       onClick={() => handleSelectJogador(jogador)}
                     >
-                      {jogador.nome} - {time?.sigla}
+                      {jogador.nome} - {timeSigla || timeNome}
                     </div>
                   );
                 })
@@ -224,7 +230,10 @@ export function PlayerTransferForm({
           <div className="grid grid-cols-3 gap-2 text-sm text-gray-300">
             <div>Nome: {selectedJogador.nome}</div>
             <div>
-              Time Atual: {times.find(t => t.id === selectedJogador.timeId)?.nome}
+              Time Atual: {selectedJogador.time_nome || times.find(t => t.id === selectedJogador.timeId)?.nome}
+            </div>
+            <div>
+              Número: {selectedJogador.numero}
             </div>
           </div>
         </div>

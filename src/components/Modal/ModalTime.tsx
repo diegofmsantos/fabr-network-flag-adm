@@ -83,17 +83,17 @@ export default function ModalTime({
     return (
         <div className="fixed inset-0 z-50 overflow-hidden">
             {/* Overlay com blur */}
-            <div 
+            <div
                 className="fixed inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={closeModal}
             ></div>
-            
+
             {/* Modal */}
             <div className="absolute inset-12 bg-[#272731] rounded-xl shadow-lg overflow-hidden flex flex-col">
                 {/* Header do modal */}
                 <div className="bg-[#1C1C24] px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center">
-                        <div 
+                        <div
                             className="w-8 h-8 rounded-md mr-3 flex items-center justify-center"
                             style={{ backgroundColor: formData.cor || '#63E300' }}
                         >
@@ -103,7 +103,7 @@ export default function ModalTime({
                             {formData.nome || 'Editar Time'}
                         </h2>
                     </div>
-                    
+
                     <button
                         className="text-gray-400 hover:text-white transition-colors"
                         onClick={closeModal}
@@ -119,25 +119,23 @@ export default function ModalTime({
                     <div className="flex space-x-1">
                         <button
                             onClick={() => setActiveTab('info')}
-                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                                activeTab === 'info'
+                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'info'
                                     ? 'text-[#63E300]'
                                     : 'text-gray-400 hover:text-white'
-                            }`}
+                                }`}
                         >
                             Informações do Time
                             {activeTab === 'info' && (
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#63E300]"></span>
                             )}
                         </button>
-                        
+
                         <button
                             onClick={() => setActiveTab('jogadores')}
-                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                                activeTab === 'jogadores'
+                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'jogadores'
                                     ? 'text-[#63E300]'
                                     : 'text-gray-400 hover:text-white'
-                            }`}
+                                }`}
                         >
                             Jogadores ({formData.jogadores?.length || 0})
                             {activeTab === 'jogadores' && (
@@ -146,7 +144,7 @@ export default function ModalTime({
                         </button>
                     </div>
                 </div>
-                
+
                 {/* Conteúdo principal (scrollable) */}
                 <div className="flex-grow overflow-y-auto p-6">
                     {/* Tab de informações do time */}
@@ -163,14 +161,42 @@ export default function ModalTime({
                                                 <label className="block text-white text-sm font-medium mb-2">
                                                     {field.label}
                                                 </label>
-                                                <input
-                                                    type="text"
-                                                    name={field.name}
-                                                    value={formData[field.name as keyof Time] as string || ""}
-                                                    onChange={handleChange}
-                                                    placeholder={field.label}
-                                                    className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-                                                />
+                                                {field.name === "regiao" ? (
+                                                    <select
+                                                        name={field.name}
+                                                        value={formData[field.name as keyof Time] as string || ""}
+                                                        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                                    >
+                                                        <option value="">Selecione uma região</option>
+                                                        <option value="Norte">Norte</option>
+                                                        <option value="Nordeste">Nordeste</option>
+                                                        <option value="Centro-Oeste">Centro-Oeste</option>
+                                                        <option value="Sudeste">Sudeste</option>
+                                                        <option value="Sul">Sul</option>
+                                                    </select>
+                                                ) : field.name === "sexo" ? (
+                                                    <select
+                                                        name={field.name}
+                                                        value={formData[field.name as keyof Time] as string || ""}
+                                                        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                                    >
+                                                        <option value="">Selecione</option>
+                                                        <option value="masculino">Masculino</option>
+                                                        <option value="feminino">Feminino</option>
+                                                        <option value="misto">Misto</option>
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        name={field.name}
+                                                        value={formData[field.name as keyof Time] as string || ""}
+                                                        onChange={handleChange}
+                                                        placeholder={field.label}
+                                                        className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
+                                                    />
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -178,7 +204,7 @@ export default function ModalTime({
                             ))}
                         </div>
                     )}
-                    
+
                     {/* Tab de jogadores */}
                     {activeTab === 'jogadores' && (
                         <div className="animate-fadeIn">
@@ -198,7 +224,7 @@ export default function ModalTime({
                                     />
                                 </div>
                             </div>
-                            
+
                             {filteredJogadores.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {filteredJogadores.map((jogador) => (
@@ -207,7 +233,7 @@ export default function ModalTime({
                                             onClick={() => openJogadorModal(jogador)}
                                             className="bg-[#1C1C24] rounded-lg overflow-hidden flex items-center border border-gray-800 hover:border-[#63E300] transition-colors cursor-pointer"
                                         >
-                                            <div 
+                                            <div
                                                 className="w-10 flex-shrink-0 h-full flex items-center justify-center"
                                                 style={{ backgroundColor: formData.cor || '#63E300' }}
                                             >
@@ -239,7 +265,7 @@ export default function ModalTime({
                         </div>
                     )}
                 </div>
-                
+
                 {/* Footer com botões de ação */}
                 <div className="bg-[#1C1C24] px-6 py-4 border-t border-gray-800 flex justify-between">
                     <button
@@ -264,7 +290,7 @@ export default function ModalTime({
                             </>
                         )}
                     </button>
-                    
+
                     <div className="space-x-3 flex">
                         <button
                             onClick={closeModal}
@@ -272,7 +298,7 @@ export default function ModalTime({
                         >
                             Cancelar
                         </button>
-                        
+
                         <button
                             onClick={handleSave}
                             disabled={isSubmitting}
@@ -298,7 +324,7 @@ export default function ModalTime({
                     </div>
                 </div>
             </div>
-            
+
             {/* Estilos adicionais */}
             <style jsx global>{`
                 .animate-fadeIn {

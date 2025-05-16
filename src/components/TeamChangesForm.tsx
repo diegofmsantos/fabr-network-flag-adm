@@ -14,6 +14,8 @@ export interface TimeChange {
   instagram2?: string
   cor?: string;
   logo?: string;
+  regiao?: string;      // Novo campo
+  sexo?: string;        // Novo campo
   capacete?: string;
   presidente?: string;
   head_coach?: string;
@@ -40,12 +42,8 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
           instagram: time.instagram,
           instagram2: time.instagram2,
           logo: time.logo,
-          capacete: time.capacete,
-          presidente: time.presidente,
-          head_coach: time.head_coach,
-          instagram_coach: time.instagram_coach,
-          coord_ofen: time.coord_ofen,
-          coord_defen: time.coord_defen,
+          regiao: time.regiao, 
+          sexo: time.sexo,  
         });
       }
     } else {
@@ -93,35 +91,18 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
       temAlteracoes = true;
     }
 
-    if (timeForm.capacete && timeForm.capacete !== timeExistente.capacete) {
-      alteracoes.capacete = timeForm.capacete;
-      temAlteracoes = true;
-    }
-    
-    if (timeForm.presidente && timeForm.presidente !== timeExistente.presidente) {
-      alteracoes.presidente = timeForm.presidente;
-      temAlteracoes = true;
-    }
-    
-    if (timeForm.head_coach && timeForm.head_coach !== timeExistente.head_coach) {
-      alteracoes.head_coach = timeForm.head_coach;
+    // Novos campos
+    if (timeForm.regiao && timeForm.regiao !== timeExistente.regiao) {
+      alteracoes.regiao = timeForm.regiao;
       temAlteracoes = true;
     }
 
-    if (timeForm.instagram_coach && timeForm.instagram_coach !== timeExistente.instagram_coach) {
-      alteracoes.instagram_coach = timeForm.instagram_coach;
+    if (timeForm.sexo && timeForm.sexo !== timeExistente.sexo) {
+      alteracoes.sexo = timeForm.sexo;
       temAlteracoes = true;
     }
-    
-    if (timeForm.coord_ofen && timeForm.coord_ofen !== timeExistente.coord_ofen) {
-      alteracoes.coord_ofen = timeForm.coord_ofen;
-      temAlteracoes = true;
-    }
-    
-    if (timeForm.coord_defen && timeForm.coord_defen !== timeExistente.coord_defen) {
-      alteracoes.coord_defen = timeForm.coord_defen;
-      temAlteracoes = true;
-    }
+
+   
     
     if (temAlteracoes) {
       const novaAlteracao: TimeChange = {
@@ -196,6 +177,7 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
             />
           </div>
+
           <div>
             <label className="block text-white text-sm font-medium mb-2">
               Instagram
@@ -207,6 +189,7 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
             />
           </div>
+
           <div>
             <label className="block text-white text-sm font-medium mb-2">
               @
@@ -218,6 +201,7 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
             />
           </div>
+
           <div>
             <label className="block text-white text-sm font-medium mb-2">
               Logo
@@ -229,78 +213,41 @@ export function TeamChangesForm({ times, onAddChange }: TeamChangesProps) {
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
             />
           </div>
+
+          {/* Novos campos adicionados */}
           <div>
             <label className="block text-white text-sm font-medium mb-2">
-              Capacete
+              Região
             </label>
-            <input
-              type="text"
-              value={timeForm.capacete || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, capacete: e.target.value })}
+            <select
+              value={timeForm.regiao || ""}
+              onChange={(e) => setTimeForm({ ...timeForm, regiao: e.target.value })}
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Presidente
-            </label>
-            <input
-              type="text"
-              value={timeForm.presidente || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, presidente: e.target.value })}
-              className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Head Coach
-            </label>
-            <input
-              type="text"
-              value={timeForm.head_coach || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, head_coach: e.target.value })}
-              className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
+            >
+              <option value="">Selecione uma região</option>
+              <option value="Norte">Norte</option>
+              <option value="Nordeste">Nordeste</option>
+              <option value="Centro-Oeste">Centro-Oeste</option>
+              <option value="Sudeste">Sudeste</option>
+              <option value="Sul">Sul</option>
+            </select>
           </div>
 
           <div>
             <label className="block text-white text-sm font-medium mb-2">
-              Instagram Coach
+              Sexo
             </label>
-            <input
-              type="text"
-              value={timeForm.instagram_coach || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, instagram_coach: e.target.value })}
+            <select
+              value={timeForm.sexo || ""}
+              onChange={(e) => setTimeForm({ ...timeForm, sexo: e.target.value })}
               className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
+            >
+              <option value="">Selecione</option>
+              <option value="masculino">Masculino</option>
+              <option value="feminino">Feminino</option>
+              <option value="misto">Misto</option>
+            </select>
           </div>
-          
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Coordenador Ofensivo
-            </label>
-            <input
-              type="text"
-              value={timeForm.coord_ofen || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, coord_ofen: e.target.value })}
-              className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Coordenador Defensivo
-            </label>
-            <input
-              type="text"
-              value={timeForm.coord_defen || ""}
-              onChange={(e) => setTimeForm({ ...timeForm, coord_defen: e.target.value })}
-              className="w-full px-3 py-2 bg-[#1C1C24] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
-            />
-          </div>
-          
           <div className="col-span-2 flex justify-end">
             <button
               onClick={handleSubmit}

@@ -25,8 +25,12 @@ export function TeamChangesDisplay({ timeChanges, times, onRemove }: TeamChanges
                   {change.sigla && <li>Sigla: {change.sigla}</li>}
                   {change.cor && <li>Cor: {change.cor}</li>}
                   {change.instagram && <li>Instagram: {change.instagram}</li>}
-                  {change.instagram2 && <li>@:: {change.instagram2}</li>}
+                  {change.instagram2 && <li>@: {change.instagram2}</li>}
                   {change.logo && <li>Logo: {change.logo}</li>}
+                  {/* Novos campos */}
+                  {change.regiao && <li>Região: {change.regiao}</li>}
+                  {change.sexo && <li>Sexo: {change.sexo}</li>}
+                  {change.capacete && <li>Capacete: {change.capacete}</li>}
                   {change.presidente && <li>Presidente: {change.presidente}</li>}
                   {change.head_coach && <li>Head Coach: {change.head_coach}</li>}
                   {change.instagram_coach && <li>Instagram Coach: {change.instagram_coach}</li>}

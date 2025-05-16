@@ -1,4 +1,3 @@
-// src/components/Modal/ModalJogador.tsx
 "use client"
 
 import { useState } from "react";
@@ -14,15 +13,17 @@ export default function ModalJogador({
     closeModal: () => void;
 }) {
     const router = useRouter();
-    
+
     const [formData, setFormData] = useState({
         ...jogador,
         estatisticas: jogador.estatisticas || {
-            ataque: {},
+            passe: {},
+            corrida: {},
+            recepcao: {},
             defesa: {}
         },
     });
-    
+
     const [activeTab, setActiveTab] = useState<'info' | 'estatisticas'>('info');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,7 +44,14 @@ export default function ModalJogador({
             if (!estatisticas[group]) {
                 estatisticas[group] = {};
             }
-            estatisticas[group][field] = value === "" ? undefined : Number(value);
+
+            // Verificar se é um campo percentual
+            if (field === "pressao_pct") {
+                estatisticas[group][field] = value === "" ? undefined : String(value);
+            } else {
+                estatisticas[group][field] = value === "" ? undefined : Number(value);
+            }
+
             return { ...prev, estatisticas };
         });
     };
@@ -77,35 +85,65 @@ export default function ModalJogador({
         }
     };
 
-    // Definição dos grupos de estatísticas para exibição
+    // Definição dos grupos de estatísticas para exibição com a nova estrutura
     const estatisticasGrupos = [
         {
-            id: 'ataque',
-            titulo: 'Ataque',
+            id: 'passe',
+            titulo: 'Passe',
             campos: [
                 { id: 'passes_completos', label: 'PASSES COMPLETOS' },
                 { id: 'passes_tentados', label: 'PASSES TENTADOS' },
-                { id: 'td_passado', label: 'TD PASSADOS' },
-                { id: 'interceptacoes_sofridas', label: 'INTERCEPTAÇÕES SOFRIDAS' },
+                { id: 'passes_incompletos', label: 'PASSES INCOMPLETOS' },
+                { id: 'jds_passe', label: 'JARDAS DE PASSE' },
+                { id: 'tds_passe', label: 'TDs DE PASSE' },
+                { id: 'passe_xp1', label: 'CONVERSÕES 1PT PASSE' },
+                { id: 'passe_xp2', label: 'CONVERSÕES 2PT PASSE' },
+                { id: 'int_sofridas', label: 'INTERCEPTAÇÕES SOFRIDAS' },
                 { id: 'sacks_sofridos', label: 'SACKS SOFRIDOS' },
-                { id: 'corrida', label: 'JARDAS CORRIDAS' },
-                { id: 'tds_corridos', label: 'TDS CORRIDOS' },
-                { id: 'recepcao', label: 'RECEPÇÕES' },
-                { id: 'alvo', label: 'ALVO' },
-                { id: 'td_recebido', label: 'TDS RECEBIDOS' }
+                { id: 'pressao_pct', label: '% PRESSÃO' }
+            ]
+        },
+        {
+            id: 'corrida',
+            titulo: 'Corrida',
+            campos: [
+                { id: 'corridas', label: 'CORRIDAS' },
+                { id: 'jds_corridas', label: 'JARDAS CORRIDAS' },
+                { id: 'tds_corridos', label: 'TDs CORRIDOS' },
+                { id: 'corrida_xp1', label: 'CONVERSÕES 1PT CORRIDA' },
+                { id: 'corrida_xp2', label: 'CONVERSÕES 2PT CORRIDA' }
+            ]
+        },
+        {
+            id: 'recepcao',
+            titulo: 'Recepção',
+            campos: [
+                { id: 'recepcoes', label: 'RECEPÇÕES' },
+                { id: 'alvos', label: 'ALVOS' },
+                { id: 'drops', label: 'DROPS' },
+                { id: 'jds_recepcao', label: 'JARDAS RECEPÇÃO' },
+                { id: 'jds_yac', label: 'JARDAS APÓS RECEPÇÃO' },
+                { id: 'tds_recepcao', label: 'TDs RECEPÇÃO' },
+                { id: 'recepcao_xp1', label: 'CONVERSÕES 1PT RECEPÇÃO' },
+                { id: 'recepcao_xp2', label: 'CONVERSÕES 2PT RECEPÇÃO' }
             ]
         },
         {
             id: 'defesa',
             titulo: 'Defesa',
             campos: [
-                { id: 'sack', label: 'SACK' },
-                { id: 'pressao', label: 'PRESSÃO' },
-                { id: 'flag_retirada', label: 'FLAG RETIRADA' },
-                { id: 'flag_perdida', label: 'FLAG PERDIDA' },
-                { id: 'passe_desviado', label: 'PASSE DESVIADO' },
-                { id: 'interceptacao_forcada', label: 'INTERCEPTAÇÃO FORÇADA' },
-                { id: 'td_defensivo', label: 'TD DEFENSIVO' }
+                { id: 'tck', label: 'TACKLES' },
+                { id: 'tfl', label: 'TACKLES FOR LOSS' },
+                { id: 'pressao_pct', label: '% PRESSÃO' },
+                { id: 'sacks', label: 'SACKS' },
+                { id: 'tip', label: 'PASSES DESVIADOS' },
+                { id: 'int', label: 'INTERCEPTAÇÕES' },
+                { id: 'tds_defesa', label: 'TDs DEFENSIVOS' },
+                { id: 'defesa_xp2', label: 'CONVERSÕES DEFESA 2PT' },
+                { id: 'sft', label: 'SAFETY' },
+                { id: 'sft_1', label: 'SAFETY 1PT' },
+                { id: 'blk', label: 'BLOQUEIOS' },
+                { id: 'jds_defesa', label: 'JARDAS DEFESA' }
             ]
         }
     ];
@@ -113,17 +151,17 @@ export default function ModalJogador({
     return (
         <div className="fixed inset-0 z-50 overflow-hidden">
             {/* Overlay com blur */}
-            <div 
+            <div
                 className="fixed inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={closeModal}
-                ></div>
-            
+            ></div>
+
             {/* Modal */}
             <div className="absolute inset-12 bg-[#272731] rounded-xl shadow-lg overflow-hidden flex flex-col">
                 {/* Header do modal */}
                 <div className="bg-[#1C1C24] px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center">
-                        <div 
+                        <div
                             className="w-8 h-8 rounded-md mr-3 flex items-center justify-center bg-[#63E300]"
                         >
                             <span className="text-black font-bold">{formData.numero || '#'}</span>
@@ -132,7 +170,7 @@ export default function ModalJogador({
                             {formData.nome || 'Editar Jogador'}
                         </h2>
                     </div>
-                    
+
                     <button
                         className="text-gray-400 hover:text-white transition-colors"
                         onClick={closeModal}
@@ -148,25 +186,23 @@ export default function ModalJogador({
                     <div className="flex space-x-1">
                         <button
                             onClick={() => setActiveTab('info')}
-                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                                activeTab === 'info'
+                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'info'
                                     ? 'text-[#63E300]'
                                     : 'text-gray-400 hover:text-white'
-                            }`}
+                                }`}
                         >
                             Informações do Jogador
                             {activeTab === 'info' && (
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#63E300]"></span>
                             )}
                         </button>
-                        
+
                         <button
                             onClick={() => setActiveTab('estatisticas')}
-                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                                activeTab === 'estatisticas'
+                            className={`px-4 py-3 text-sm font-medium transition-colors relative ${activeTab === 'estatisticas'
                                     ? 'text-[#63E300]'
                                     : 'text-gray-400 hover:text-white'
-                            }`}
+                                }`}
                         >
                             Estatísticas
                             {activeTab === 'estatisticas' && (
@@ -175,7 +211,7 @@ export default function ModalJogador({
                         </button>
                     </div>
                 </div>
-                
+
                 {/* Conteúdo principal (scrollable) */}
                 <div className="flex-grow overflow-y-auto p-6">
                     {/* Tab de informações do jogador */}
@@ -198,7 +234,7 @@ export default function ModalJogador({
                                             className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
                                         />
                                     </div>
-                                    
+
                                     <div>
                                         <label className="block text-white text-sm font-medium mb-2">
                                             Número
@@ -211,7 +247,7 @@ export default function ModalJogador({
                                             className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
                                         />
                                     </div>
-                                    
+
                                     <div>
                                         <label className="block text-white text-sm font-medium mb-2">
                                             Camisa (Nome)
@@ -224,11 +260,24 @@ export default function ModalJogador({
                                             className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#63E300]"
                                         />
                                     </div>
+
+                                    <div>
+                                        <label className="block text-white text-sm font-medium mb-2">
+                                            Time
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="time_nome"
+                                            value={formData.time_nome || ""}
+                                            disabled
+                                            className="w-full px-3 py-2 bg-[#272731] border border-gray-700 rounded-lg text-gray-500 focus:outline-none focus:border-[#63E300]"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Tab de estatísticas */}
                     {activeTab === 'estatisticas' && (
                         <div className="space-y-6 animate-fadeIn">
@@ -256,14 +305,14 @@ export default function ModalJogador({
                                                         </div>
                                                     </div>
                                                     <div className="w-full bg-[#272731] rounded-full h-1.5">
-                                                        <div 
-                                                            className="bg-[#63E300] h-1.5 rounded-full" 
-                                                            style={{ 
+                                                        <div
+                                                            className="bg-[#63E300] h-1.5 rounded-full"
+                                                            style={{
                                                                 width: `${Math.min(
                                                                     100,
-                                                                    (Number((formData.estatisticas as any)?.[grupo.id]?.[campo.id] || 0) / 
-                                                                    (campo.id.includes('jardas') ? 500 : 100)) * 100
-                                                                )}%` 
+                                                                    (Number((formData.estatisticas as any)?.[grupo.id]?.[campo.id] || 0) /
+                                                                        (campo.id.includes('jds') ? 500 : 100)) * 100
+                                                                )}%`
                                                             }}
                                                         ></div>
                                                     </div>
@@ -276,7 +325,7 @@ export default function ModalJogador({
                         </div>
                     )}
                 </div>
-                
+
                 {/* Footer com botões de ação */}
                 <div className="bg-[#1C1C24] px-6 py-4 border-t border-gray-800 flex justify-between">
                     <button
@@ -301,7 +350,7 @@ export default function ModalJogador({
                             </>
                         )}
                     </button>
-                    
+
                     <div className="space-x-3 flex">
                         <button
                             onClick={closeModal}
@@ -309,7 +358,7 @@ export default function ModalJogador({
                         >
                             Cancelar
                         </button>
-                        
+
                         <button
                             onClick={handleSave}
                             disabled={isSubmitting}
@@ -335,7 +384,7 @@ export default function ModalJogador({
                     </div>
                 </div>
             </div>
-            
+
             {/* Estilos adicionais */}
             <style jsx global>{`
                 .animate-fadeIn {
