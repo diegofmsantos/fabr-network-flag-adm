@@ -1,4 +1,3 @@
-// src/components/admin/ProcessedGamesList.tsx
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, RefreshCw, AlertCircle } from 'lucide-react';
 
@@ -18,13 +17,32 @@ const ProcessedGamesList = () => {
             setLoading(true);
             setError(null);
 
-            // Base URL da API
+            // Base URL da API - CORRIGIDO para garantir o formato correto
             const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${API_BASE_URL}/jogos-processados`);
-
+            
+            // Garante que não tenhamos barras duplicadas
+            const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+            
+            // Monta a URL completa (com ou sem /api dependendo de como seu servidor está configurado)
+            const url = `${baseUrl}/jogos-processados`;
+            
+            console.log(`Buscando jogos processados em: ${url}`);
+            
+            const response = await fetch(url);
+            
+            // Em caso de erro, captura o texto para diagnóstico
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erro ao buscar jogos processados');
+                const errorText = await response.text();
+                console.error(`Resposta (${response.status}):`, errorText.substring(0, 200));
+                throw new Error(`Erro ao buscar jogos: ${response.status} ${response.statusText}`);
+            }
+            
+            // Verificar o tipo de conteúdo antes de fazer o parsing
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Resposta não-JSON recebida:', text.substring(0, 200));
+                throw new Error('O servidor retornou um formato de resposta inválido');
             }
 
             const data = await response.json();
@@ -93,7 +111,7 @@ const ProcessedGamesList = () => {
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-[#1C1C24]">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     ID do Jogo
@@ -106,10 +124,10 @@ const ProcessedGamesList = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-[#1C1C24] divide-y divide-gray-200">
                             {games.map((game) => (
                                 <tr key={game.id_jogo} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         {game.id_jogo}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
