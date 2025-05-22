@@ -1,4 +1,4 @@
-// src/components/admin/AdminUploadForm.tsx
+// src/components/admin/AdminUploadForm.tsx - Flag Football com Design Melhorado
 import React, { useState } from 'react';
 import { Upload, FileText, Check, AlertTriangle } from 'lucide-react';
 
@@ -119,18 +119,18 @@ const AdminUploadForm = () => {
   };
   
   return (
-    <div className="max-w-md mx-auto bg-[#1C1C24]  p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-[#50B800]">Upload de Planilhas</h2>
+    <div className="max-w-md mx-auto bg-[#1C1C24] p-6 rounded-lg shadow-md">
+      <h2 className="text-xl font-bold mb-4 text-[#63E300]">Upload de Planilhas</h2>
       
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
+        <div className="bg-red-500/20 border border-red-500 text-red-100 px-4 py-3 rounded mb-4 flex items-center">
           <AlertTriangle size={20} className="mr-2" />
           {error}
         </div>
       )}
       
       {result && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4 flex items-center">
+        <div className="bg-green-500/20 border border-green-500 text-green-100 px-4 py-3 rounded mb-4 flex items-center">
           <Check size={20} className="mr-2" />
           <div>
             <p className="font-bold">{result.mensagem}</p>
@@ -143,14 +143,14 @@ const AdminUploadForm = () => {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#50B800] mb-1">
+          <label className="block text-sm font-medium text-[#63E300] mb-1">
             Tipo de Planilha
           </label>
           <select
             name="tipo"
             value={formData.tipo}
             onChange={handleInputChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-700 bg-[#272731] text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#63E300]"
             required
           >
             <option value="times">Times</option>
@@ -163,7 +163,7 @@ const AdminUploadForm = () => {
         {(formData.tipo === 'estatisticas' || formData.tipo === 'reprocessar') && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 ID do Jogo
               </label>
               <input
@@ -172,13 +172,13 @@ const AdminUploadForm = () => {
                 value={formData.id_jogo}
                 onChange={handleInputChange}
                 placeholder="Ex: jogo_001"
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-700 bg-[#272731] text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#63E300]"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Data do Jogo
               </label>
               <input
@@ -186,15 +186,15 @@ const AdminUploadForm = () => {
                 name="data_jogo"
                 value={formData.data_jogo}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-700 bg-[#272731] text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#63E300]"
                 required
               />
             </div>
           </>
         )}
         
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center" 
-             style={{ background: selectedFile ? '#f0f9ff' : 'white' }}>
+        <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center" 
+             style={{ background: selectedFile ? '#272731' : '#1C1C24' }}>
           <input
             id="file-input"
             type="file"
@@ -204,15 +204,15 @@ const AdminUploadForm = () => {
           />
           <label htmlFor="file-input" className="cursor-pointer">
             <div className="flex flex-col items-center justify-center gap-2">
-              <FileText size={48} className="text-blue-500" />
+              <FileText size={48} className="text-[#63E300]" />
               {selectedFile ? (
-                <span className="font-medium text-blue-600">{selectedFile.name}</span>
+                <span className="font-medium text-[#63E300]">{selectedFile.name}</span>
               ) : (
-                <span className="text-gray-500">
+                <span className="text-gray-400">
                   Clique para selecionar uma planilha Excel
                 </span>
               )}
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 (.xlsx, .xls)
               </span>
             </div>
@@ -222,11 +222,11 @@ const AdminUploadForm = () => {
         <button
           type="submit"
           disabled={uploading}
-          className="w-full bg-[#50B800] hover:opacity-80 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center"
+          className="w-full bg-[#63E300] hover:bg-[#50B800] text-black font-medium py-2 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 transition-colors"
         >
           {uploading ? (
             <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
